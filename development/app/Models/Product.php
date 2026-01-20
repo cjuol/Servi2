@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\AccentInsensitiveSearch;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes, AccentInsensitiveSearch;
 
     protected $fillable = [
         'category_id',

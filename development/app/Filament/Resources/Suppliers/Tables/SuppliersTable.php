@@ -15,19 +15,40 @@ class SuppliersTable
         return $table
             ->columns([
                 TextColumn::make('id')
-                    ->label('ID'),
+                    ->label('ID')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('name')
                     ->label('Nombre')
-                    ->searchable(),
+                    ->searchable(query: function ($query, $search) {
+                        if (config('database.default') === 'pgsql') {
+                            return $query->whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ["%{$search}%"]);
+                        }
+                        return $query->where('name', 'ILIKE', "%{$search}%");
+                    }),
                 TextColumn::make('contact_name')
                     ->label('Persona de contacto')
-                    ->searchable(),
+                    ->searchable(query: function ($query, $search) {
+                        if (config('database.default') === 'pgsql') {
+                            return $query->whereRaw("unaccent(LOWER(contact_name::text)) LIKE unaccent(LOWER(?))", ["%{$search}%"]);
+                        }
+                        return $query->where('contact_name', 'ILIKE', "%{$search}%");
+                    }),
                 TextColumn::make('email')
                     ->label('Correo electrónico')
-                    ->searchable(),
+                    ->searchable(query: function ($query, $search) {
+                        if (config('database.default') === 'pgsql') {
+                            return $query->whereRaw("unaccent(LOWER(email::text)) LIKE unaccent(LOWER(?))", ["%{$search}%"]);
+                        }
+                        return $query->where('email', 'ILIKE', "%{$search}%");
+                    }),
                 TextColumn::make('phone')
                     ->label('Teléfono')
-                    ->searchable(),
+                    ->searchable(query: function ($query, $search) {
+                        if (config('database.default') === 'pgsql') {
+                            return $query->whereRaw("unaccent(LOWER(phone::text)) LIKE unaccent(LOWER(?))", ["%{$search}%"]);
+                        }
+                        return $query->where('phone', 'ILIKE', "%{$search}%");
+                    }),
                 TextColumn::make('created_at')
                     ->label('Creado')
                     ->dateTime()

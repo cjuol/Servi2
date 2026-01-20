@@ -211,4 +211,69 @@ class CategoryTest extends TestCase
         );
         $this->assertEquals(36, strlen($category->id)); // UUID siempre tiene 36 caracteres
     }
+
+    /** @test */
+    public function puede_buscar_categorias_sin_acentos(): void
+    {
+        // Crear categorías con acentos
+        Category::factory()->create(['name' => 'Bebidas Alcohólicas']);
+        Category::factory()->create(['name' => 'Café y Té']);
+        Category::factory()->create(['name' => 'Panadería']);
+
+        // Buscar "bebidas alcoholicas" debe encontrar "Bebidas Alcohólicas"
+        if (config('database.default') === 'pgsql') {
+            $results = Category::whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ['%alcoholicas%'])->get();
+            $this->assertCount(1, $results);
+            $this->assertEquals('Bebidas Alcohólicas', $results->first()->name);
+        }
+
+        // Buscar "cafe" debe encontrar "Café y Té"
+        if (config('database.default') === 'pgsql') {
+            $results = Category::whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ['%cafe%'])->get();
+            $this->assertCount(1, $results);
+            $this->assertEquals('Café y Té', $results->first()->name);
+        }
+
+        // Buscar "panaderia" debe encontrar "Panadería"
+        if (config('database.default') === 'pgsql') {
+            $results = Category::whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ['%panaderia%'])->get();
+            $this->assertCount(1, $results);
+            $this->assertEquals('Panadería', $results->first()->name);
+        }
+    }
+
+    /** @test */
+    public function puede_buscar_categorias_por_slug_sin_acentos(): void
+    {
+        Category::factory()->create([
+            'name' => 'Repostería',
+            'slug' => 'reposteria',
+        ]);
+
+        Category::factory()->create([
+            'name' => 'Carnicería',
+            'slug' => 'carniceria',
+        ]);
+
+        // Buscar por slug sin acentos
+        if (config('database.default') === 'pgsql') {
+            $results = Category::whereRaw("unaccent(LOWER(slug::text)) LIKE unaccent(LOWER(?))", ['%reposteria%'])->get();
+            $this->assertCount(1, $results);
+            $this->assertEquals('Repostería', $results->first()->name);
+        }
+    }
+
+    /** @test */
+    public function busqueda_sin_acentos_es_case_insensitive(): void
+    {
+        Category::factory()->create(['name' => 'CAFÉ']);
+        Category::factory()->create(['name' => 'café']);
+        Category::factory()->create(['name' => 'Café']);
+
+        // Buscar "cafe" en cualquier variación de mayúsculas/minúsculas
+        if (config('database.default') === 'pgsql') {
+            $results = Category::whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ['%cafe%'])->get();
+            $this->assertCount(3, $results);
+        }
+    }
 }

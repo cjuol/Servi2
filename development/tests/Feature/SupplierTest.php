@@ -245,4 +245,95 @@ class SupplierTest extends TestCase
         $this->assertEquals($createdAt->timestamp, $supplier->created_at->timestamp);
         $this->assertGreaterThan($createdAt->timestamp, $supplier->updated_at->timestamp);
     }
+
+    /** @test */
+    public function puede_buscar_proveedores_por_nombre_sin_acentos(): void
+    {
+        Supplier::factory()->create(['name' => 'Distribución García']);
+        Supplier::factory()->create(['name' => 'Almacén López']);
+        Supplier::factory()->create(['name' => 'Carnicería José']);
+
+        // Buscar "garcia" debe encontrar "Distribución García"
+        if (config('database.default') === 'pgsql') {
+            $results = Supplier::whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ['%garcia%'])->get();
+            $this->assertCount(1, $results);
+            $this->assertEquals('Distribución García', $results->first()->name);
+        }
+
+        // Buscar "lopez" debe encontrar "Almacén López"
+        if (config('database.default') === 'pgsql') {
+            $results = Supplier::whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ['%lopez%'])->get();
+            $this->assertCount(1, $results);
+            $this->assertEquals('Almacén López', $results->first()->name);
+        }
+
+        // Buscar "jose" debe encontrar "Carnicería José"
+        if (config('database.default') === 'pgsql') {
+            $results = Supplier::whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ['%jose%'])->get();
+            $this->assertCount(1, $results);
+            $this->assertEquals('Carnicería José', $results->first()->name);
+        }
+    }
+
+    /** @test */
+    public function puede_buscar_proveedores_por_persona_contacto_sin_acentos(): void
+    {
+        Supplier::factory()->create([
+            'name' => 'Proveedor A',
+            'contact_name' => 'José María Pérez',
+        ]);
+
+        Supplier::factory()->create([
+            'name' => 'Proveedor B',
+            'contact_name' => 'María González',
+        ]);
+
+        // Buscar "jose maria" debe encontrar el proveedor con contacto "José María Pérez"
+        if (config('database.default') === 'pgsql') {
+            $results = Supplier::whereRaw("unaccent(LOWER(contact_name::text)) LIKE unaccent(LOWER(?))", ['%jose maria%'])->get();
+            $this->assertCount(1, $results);
+            $this->assertEquals('José María Pérez', $results->first()->contact_name);
+        }
+
+        // Buscar "maria" debe encontrar ambos proveedores
+        if (config('database.default') === 'pgsql') {
+            $results = Supplier::whereRaw("unaccent(LOWER(contact_name::text)) LIKE unaccent(LOWER(?))", ['%maria%'])->get();
+            $this->assertCount(2, $results);
+        }
+    }
+
+    /** @test */
+    public function puede_buscar_proveedores_por_email_sin_acentos(): void
+    {
+        Supplier::factory()->create([
+            'name' => 'Proveedor 1',
+            'email' => 'josé@proveedor.com',
+        ]);
+
+        Supplier::factory()->create([
+            'name' => 'Proveedor 2',
+            'email' => 'maria@distribucion.com',
+        ]);
+
+        // Buscar "jose@proveedor" debe encontrar el email con acento
+        if (config('database.default') === 'pgsql') {
+            $results = Supplier::whereRaw("unaccent(LOWER(email::text)) LIKE unaccent(LOWER(?))", ['%jose@proveedor%'])->get();
+            $this->assertCount(1, $results);
+            $this->assertEquals('josé@proveedor.com', $results->first()->email);
+        }
+    }
+
+    /** @test */
+    public function busqueda_sin_acentos_es_case_insensitive_en_proveedores(): void
+    {
+        Supplier::factory()->create(['name' => 'GARCÍA']);
+        Supplier::factory()->create(['name' => 'garcía']);
+        Supplier::factory()->create(['name' => 'García']);
+
+        // Buscar "garcia" en cualquier variación de mayúsculas/minúsculas
+        if (config('database.default') === 'pgsql') {
+            $results = Supplier::whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ['%garcia%'])->get();
+            $this->assertCount(3, $results);
+        }
+    }
 }

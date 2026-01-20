@@ -27,36 +27,40 @@ class ProductsTable
         return $table
             ->columns([
                 TextColumn::make('id')
-                    ->label('ID'),
+                    ->label('ID')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('category.name')
                     ->label('Categoría')
-                    ->searchable(),
+                    ->searchable(query: function ($query, $search) {
+                        if (config('database.default') === 'pgsql') {
+                            return $query->whereHas('category', function ($q) use ($search) {
+                                $q->whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ["%{$search}%"]);
+                            });
+                        }
+                        return $query->whereHas('category', function ($q) use ($search) {
+                            $q->where('name', 'ILIKE', "%{$search}%");
+                        });
+                    }),
                 TextColumn::make('supplier.name')
                     ->label('Proveedor')
-                    ->searchable(),
+                    ->searchable(query: function ($query, $search) {
+                        if (config('database.default') === 'pgsql') {
+                            return $query->whereHas('supplier', function ($q) use ($search) {
+                                $q->whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ["%{$search}%"]);
+                            });
+                        }
+                        return $query->whereHas('supplier', function ($q) use ($search) {
+                            $q->where('name', 'ILIKE', "%{$search}%");
+                        });
+                    }),
                 TextColumn::make('name')
                     ->label('Nombre')
-                    ->searchable(),
-                TextColumn::make('barcode')
-                    ->label('Código de barras')
-                    ->searchable(),
-                TextColumn::make('sku')
-                    ->label('SKU')
-                    ->searchable(),
-                ImageColumn::make('image_path')
-                    ->label('Imagen'),
-                TextColumn::make('cost_price')
-                    ->label('Precio coste')
-                    ->money()
-                    ->sortable(),
-                TextColumn::make('sale_price')
-                    ->label('Precio venta')
-                    ->money()
-                    ->sortable(),
-                TextColumn::make('tax_rate')
-                    ->label('IVA (%)')
-                    ->numeric()
-                    ->sortable(),
+                    ->searchable(query: function ($query, $search) {
+                        if (config('database.default') === 'pgsql') {
+                            return $query->whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ["%{$search}%"]);
+                        }
+                        return $query->where('name', 'ILIKE', "%{$search}%");
+                    }),
                 TextColumn::make('stock_quantity')
                     ->label('Stock')
                     ->numeric()

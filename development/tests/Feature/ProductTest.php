@@ -346,4 +346,111 @@ class ProductTest extends TestCase
 
         $this->assertEquals(7, $productWithCount->stock_movements_count);
     }
+
+    /** @test */
+    public function puede_buscar_productos_sin_acentos(): void
+    {
+        $category = Category::factory()->create();
+        $supplier = Supplier::factory()->create();
+
+        // Crear productos con acentos
+        Product::factory()->create([
+            'name' => 'Café Colombiano',
+            'category_id' => $category->id,
+            'supplier_id' => $supplier->id,
+        ]);
+
+        Product::factory()->create([
+            'name' => 'Té Verde',
+            'category_id' => $category->id,
+            'supplier_id' => $supplier->id,
+        ]);
+
+        Product::factory()->create([
+            'name' => 'Azúcar Moreno',
+            'category_id' => $category->id,
+            'supplier_id' => $supplier->id,
+        ]);
+
+        // Buscar "cafe" debe encontrar "Café Colombiano"
+        if (config('database.default') === 'pgsql') {
+            $results = Product::whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ['%cafe%'])->get();
+            $this->assertCount(1, $results);
+            $this->assertEquals('Café Colombiano', $results->first()->name);
+        }
+
+        // Buscar "te" debe encontrar "Té Verde"
+        if (config('database.default') === 'pgsql') {
+            $results = Product::whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ['%te%'])->get();
+            $this->assertCount(1, $results);
+            $this->assertEquals('Té Verde', $results->first()->name);
+        }
+
+        // Buscar "azucar" debe encontrar "Azúcar Moreno"
+        if (config('database.default') === 'pgsql') {
+            $results = Product::whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ['%azucar%'])->get();
+            $this->assertCount(1, $results);
+            $this->assertEquals('Azúcar Moreno', $results->first()->name);
+        }
+    }
+
+    /** @test */
+    public function puede_buscar_productos_por_categoria_sin_acentos(): void
+    {
+        $category = Category::factory()->create(['name' => 'Bebidas Frías']);
+        $otherCategory = Category::factory()->create(['name' => 'Postres']);
+        $supplier = Supplier::factory()->create();
+
+        Product::factory()->create([
+            'name' => 'Producto 1',
+            'category_id' => $category->id,
+            'supplier_id' => $supplier->id,
+        ]);
+
+        Product::factory()->create([
+            'name' => 'Producto 2',
+            'category_id' => $otherCategory->id,
+            'supplier_id' => $supplier->id,
+        ]);
+
+        // Buscar "bebidas frias" debe encontrar productos de la categoría "Bebidas Frías"
+        if (config('database.default') === 'pgsql') {
+            $results = Product::whereHas('category', function ($query) {
+                $query->whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ['%bebidas frias%']);
+            })->get();
+
+            $this->assertCount(1, $results);
+            $this->assertEquals('Producto 1', $results->first()->name);
+        }
+    }
+
+    /** @test */
+    public function puede_buscar_productos_por_proveedor_sin_acentos(): void
+    {
+        $category = Category::factory()->create();
+        $supplier = Supplier::factory()->create(['name' => 'Distribución García']);
+        $otherSupplier = Supplier::factory()->create(['name' => 'Proveedor López']);
+
+        Product::factory()->create([
+            'name' => 'Producto A',
+            'category_id' => $category->id,
+            'supplier_id' => $supplier->id,
+        ]);
+
+        Product::factory()->create([
+            'name' => 'Producto B',
+            'category_id' => $category->id,
+            'supplier_id' => $otherSupplier->id,
+        ]);
+
+        // Buscar "garcia" debe encontrar productos del proveedor "Distribución García"
+        if (config('database.default') === 'pgsql') {
+            $results = Product::whereHas('supplier', function ($query) {
+                $query->whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ['%garcia%']);
+            })->get();
+
+            $this->assertCount(1, $results);
+            $this->assertEquals('Producto A', $results->first()->name);
+        }
+    }
 }

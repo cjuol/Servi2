@@ -7,6 +7,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Tables\Columns\ColorColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
@@ -19,16 +20,26 @@ class CategoriesTable
         return $table
             ->columns([
                 TextColumn::make('id')
-                    ->label('ID'),
+                    ->label('ID')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('name')
                     ->label('Nombre')
-                    ->searchable(),
+                    ->searchable(query: function ($query, $search) {
+                        if (config('database.default') === 'pgsql') {
+                            return $query->whereRaw("unaccent(LOWER(name::text)) LIKE unaccent(LOWER(?))", ["%{$search}%"]);
+                        }
+                        return $query->where('name', 'ILIKE', "%{$search}%");
+                    }),
                 TextColumn::make('slug')
                     ->label('Slug')
-                    ->searchable(),
-                TextColumn::make('color')
-                    ->label('Color')
-                    ->searchable(),
+                    ->searchable(query: function ($query, $search) {
+                        if (config('database.default') === 'pgsql') {
+                            return $query->whereRaw("unaccent(LOWER(slug::text)) LIKE unaccent(LOWER(?))", ["%{$search}%"]);
+                        }
+                        return $query->where('slug', 'ILIKE', "%{$search}%");
+                    }),
+                ColorColumn::make('color')
+                    ->label('Color'),
                 IconColumn::make('is_active')
                     ->label('Activo')
                     ->boolean(),

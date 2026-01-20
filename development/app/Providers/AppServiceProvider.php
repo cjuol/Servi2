@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use App\Policies\UserPolicy;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +23,39 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Registrar policies
+        Gate::policy(User::class, UserPolicy::class);
+
+        // Extender el Builder de Eloquent para búsquedas insensibles a acentos
+        Builder::macro('whereLikeUnaccented', function ($column, $value) {
+            if (config('database.default') === 'pgsql') {
+                return $this->whereRaw("unaccent(LOWER({$column}::text)) LIKE unaccent(LOWER(?))", ["%{$value}%"]);
+            }
+            
+            // Para MySQL/MariaDB con utf8mb4_unicode_ci ya es insensible a acentos
+            return $this->where($column, 'ILIKE', "%{$value}%");
+        });
+
+        Builder::macro('orWhereLikeUnaccented', function ($column, $value) {
+            if (config('database.default') === 'pgsql') {
+                return $this->orWhereRaw("unaccent(LOWER({$column}::text)) LIKE unaccent(LOWER(?))", ["%{$value}%"]);
+            }
+            
+            return $this->orWhere($column, 'ILIKE', "%{$value}%");
+        });
+
+        // Sobrescribir el comportamiento de búsqueda global de Filament
+        Builder::macro('searchUnaccented', function (array $columns, $search) {
+            return $this->where(function ($query) use ($columns, $search) {
+                foreach ($columns as $column) {
+                    if (config('database.default') === 'pgsql') {
+                        $query->orWhereRaw("unaccent(LOWER({$column}::text)) LIKE unaccent(LOWER(?))", ["%{$search}%"]);
+                    } else {
+                        $query->orWhere($column, 'ILIKE', "%{$search}%");
+                    }
+                }
+            });
+        });
     }
 }
+
