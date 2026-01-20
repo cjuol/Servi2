@@ -20,7 +20,7 @@ class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
 
     protected static ?string $recordTitleAttribute = 'Categoria';
 
@@ -31,6 +31,8 @@ class CategoryResource extends Resource
     protected static ?string $pluralModelLabel = 'Categorías';
 
     protected static ?string $slug = 'categorias';
+
+    protected static \UnitEnum|string|null $navigationGroup = 'Gestión de Inventario';
 
     public static function form(Schema $schema): Schema
     {
