@@ -7,6 +7,7 @@ use App\Policies\UserPolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL; // <--- 1. IMPORTANTE: Añadida esta línea
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +24,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // --- INICIO DEL FIX HTTPS ---
+        // Esto fuerza a Laravel a generar todos los links (CSS, JS, Rutas) con https://
+        if (config('app.env') !== 'local') { 
+            URL::forceScheme('https');
+
+            // Fix adicional para Nginx Reverse Proxy:
+            // Fuerza a la request actual a creer que es HTTPS para validar firmas y assets
+            $this->app['request']->server->set('HTTPS', 'on');
+        }
+        // --- FIN DEL FIX HTTPS ---
+
+
         // Registrar policies
         Gate::policy(User::class, UserPolicy::class);
 
@@ -58,4 +71,3 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 }
-
