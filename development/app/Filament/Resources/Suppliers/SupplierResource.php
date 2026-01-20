@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Suppliers;
 use App\Filament\Resources\Suppliers\Pages\CreateSupplier;
 use App\Filament\Resources\Suppliers\Pages\EditSupplier;
 use App\Filament\Resources\Suppliers\Pages\ListSuppliers;
+use App\Filament\Resources\Suppliers\Pages\ViewSupplier;
 use App\Filament\Resources\Suppliers\Schemas\SupplierForm;
 use App\Filament\Resources\Suppliers\Tables\SuppliersTable;
 use App\Models\Supplier;
@@ -20,7 +21,7 @@ class SupplierResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
 
-    protected static ?string $recordTitleAttribute = 'Proveedor';
+    protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $navigationLabel = 'Proveedores';
 
@@ -31,6 +32,11 @@ class SupplierResource extends Resource
     protected static ?string $slug = 'proveedores';
 
     protected static \UnitEnum|string|null $navigationGroup = 'Gestión de Inventario';
+
+    public static function getRecordUrl(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return static::getUrl('view', ['record' => $record]);
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -54,6 +60,7 @@ class SupplierResource extends Resource
         return [
             'index' => ListSuppliers::route('/'),
             'create' => CreateSupplier::route('/create'),
+            'view' => ViewSupplier::route('/{record}'),
             'edit' => EditSupplier::route('/{record}/edit'),
         ];
     }

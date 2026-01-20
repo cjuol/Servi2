@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable implements FilamentUser
 {
@@ -24,6 +25,7 @@ class User extends Authenticatable implements FilamentUser
      */
     protected $fillable = [
         'name',
+        'slug',
         'email',
         'password',
         'role',
@@ -51,6 +53,46 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
+    }
+
+    /**
+     * Usar slug en lugar de id para las rutas.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    /**
+     * Boot del modelo para generar slug automáticamente.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($user) {
+            if (empty($user->slug)) {
+                $user->slug = Str::slug($user->name);
+                
+                $count = 1;
+                while (static::where('slug', $user->slug)->exists()) {
+                    $user->slug = Str::slug($user->name) . '-' . $count;
+                    $count++;
+                }
+            }
+        });
+
+        static::updating(function ($user) {
+            if ($user->isDirty('name')) {
+                $user->slug = Str::slug($user->name);
+                
+                $count = 1;
+                while (static::where('slug', $user->slug)->where('id', '!=', $user->id)->exists()) {
+                    $user->slug = Str::slug($user->name) . '-' . $count;
+                    $count++;
+                }
+            }
+        });
     }
 
     /**

@@ -33,7 +33,7 @@ class CheckLowStock
                     ->actions([
                         Action::make('view')
                             ->label('Ver Producto')
-                            ->url(route('filament.admin.resources.products.edit', ['record' => $product->id]))
+                            ->url(route('filament.admin.resources.productos.view', ['record' => $product->slug]))
                             ->button()
                             ->markAsRead(),
                     ])

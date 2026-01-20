@@ -25,6 +25,7 @@ class ProductsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->recordUrl(fn ($record) => route('filament.admin.resources.productos.view', ['record' => $record->slug]))
             ->columns([
                 TextColumn::make('id')
                     ->label('ID')

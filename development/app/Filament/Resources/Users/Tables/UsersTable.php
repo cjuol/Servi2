@@ -15,6 +15,7 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->recordUrl(fn ($record) => route('filament.admin.resources.users.view', ['record' => $record->slug]))
             ->columns([
                 TextColumn::make('name')
                     ->label('Nombre')

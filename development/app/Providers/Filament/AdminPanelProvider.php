@@ -31,7 +31,12 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->profile(EditProfile::class, isSimple: true)
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Cyan,   // Destaca muchísimo en modo oscuro
+                'gray'    => Color::Slate,  // El gris por defecto, funciona bien
+                'info'    => Color::Blue,
+                'success' => Color::Lime,   // Verde eléctrico
+                'warning' => Color::Yellow,
+                'danger'  => Color::Red,
             ])
             ->topNavigation()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
