@@ -1,59 +1,220 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Servi2 - Sistema TPV e Inventario
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema de Punto de Venta (TPV) y gestión de inventario desarrollado con Laravel 11 y Filament v5.
 
-## About Laravel
+## 📋 Descripción
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Servi2 es una aplicación web completa para la gestión de inventario y punto de venta, diseñada para facilitar el control de productos, categorías, proveedores y movimientos de stock con trazabilidad completa.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🚀 Características
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Gestión de Inventario
+- **Productos**: CRUD completo con UUID v7, soft deletes, códigos de barras y SKU únicos
+- **Categorías**: Organización de productos con colores personalizados
+- **Proveedores**: Gestión de información de proveedores con productos asociados
+- **Movimientos de Stock**: Trazabilidad completa de todos los movimientos (compras, ventas, ajustes, mermas)
 
-## Learning Laravel
+### Control de Stock
+- Bloqueo del campo stock en formularios (solo mediante ajustes)
+- Acción de ajuste de stock con modal integrado en Filament
+- Historial de movimientos con relation manager
+- Scopes para productos con stock bajo
+- Cálculo automático de precios con impuestos
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Panel Administrativo
+- Interfaz construida con **Filament v5**
+- Formularios dinámicos y validaciones
+- Tablas con filtros y búsqueda
+- Relation managers para visualizar relaciones
+- Notificaciones de acciones
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🛠️ Stack Tecnológico
 
-## Laravel Sponsors
+- **Backend**: Laravel 11
+- **Admin Panel**: Filament v5
+- **Base de Datos**: PostgreSQL
+- **Frontend**: Livewire, Alpine.js, Tailwind CSS
+- **Containerización**: Docker + Docker Compose
+- **Testing**: PHPUnit
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 📦 Requisitos
 
-### Premium Partners
+- Docker
+- Docker Compose
+- Git
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 🔧 Instalación
 
-## Contributing
+1. **Clonar el repositorio**
+```bash
+git clone <repository-url>
+cd Servi2
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+2. **Levantar los contenedores**
+```bash
+docker-compose up -d
+```
 
-## Code of Conduct
+3. **Instalar dependencias**
+```bash
+docker-compose exec web composer install
+docker-compose exec web npm install
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+4. **Configurar el entorno**
+```bash
+docker-compose exec web cp .env.example .env
+docker-compose exec web php artisan key:generate
+```
 
-## Security Vulnerabilities
+5. **Ejecutar migraciones**
+```bash
+docker-compose exec web php artisan migrate
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+6. **Crear usuario administrador (opcional)**
+```bash
+docker-compose exec web php artisan make:filament-user
+```
 
-## License
+## 🧪 Testing
+
+El proyecto cuenta con **141 tests** con **265 aserciones** que cubren todos los modelos principales.
+
+### Ejecutar todos los tests
+```bash
+docker-compose exec web php artisan test
+```
+
+### Ejecutar tests específicos
+
+**Tests de Category:**
+```bash
+docker-compose exec web php artisan test tests/Feature/CategoryTest.php
+docker-compose exec web php artisan test tests/Unit/CategoryUnitTest.php
+```
+
+**Tests de Product:**
+```bash
+docker-compose exec web php artisan test tests/Feature/ProductTest.php
+docker-compose exec web php artisan test tests/Unit/ProductUnitTest.php
+```
+
+**Tests de StockMovement:**
+```bash
+docker-compose exec web php artisan test tests/Feature/StockMovementTest.php
+docker-compose exec web php artisan test tests/Unit/StockMovementUnitTest.php
+```
+
+**Tests de Supplier:**
+```bash
+docker-compose exec web php artisan test tests/Feature/SupplierTest.php
+docker-compose exec web php artisan test tests/Unit/SupplierUnitTest.php
+```
+
+### Ejecutar tests con cobertura
+```bash
+docker-compose exec web php artisan test --coverage
+```
+
+### Ejecutar un test específico
+```bash
+docker-compose exec web php artisan test --filter nombre_del_test
+```
+
+## 📊 Cobertura de Tests
+
+| Modelo | Feature Tests | Unit Tests | Total |
+|--------|--------------|------------|-------|
+| Category | 13 | 11 | 24 |
+| Product | 22 | 21 | 43 |
+| StockMovement | 20 | 19 | 39 |
+| Supplier | 17 | 17 | 34 |
+| **TOTAL** | **72** | **68** | **141** |
+
+## 📁 Estructura del Proyecto
+
+```
+development/
+├── app/
+│   ├── Filament/
+│   │   └── Resources/
+│   │       └── Products/
+│   │           ├── ProductResource.php
+│   │           ├── Schemas/
+│   │           │   └── ProductForm.php
+│   │           ├── Tables/
+│   │           │   └── ProductsTable.php
+│   │           └── RelationManagers/
+│   │               └── MovementsRelationManager.php
+│   ├── Http/
+│   ├── Models/
+│   │   ├── Category.php
+│   │   ├── Product.php
+│   │   ├── StockMovement.php
+│   │   └── Supplier.php
+│   └── Providers/
+├── database/
+│   ├── factories/
+│   │   ├── CategoryFactory.php
+│   │   ├── ProductFactory.php
+│   │   ├── StockMovementFactory.php
+│   │   └── SupplierFactory.php
+│   ├── migrations/
+│   └── seeders/
+├── tests/
+│   ├── Feature/
+│   │   ├── CategoryTest.php
+│   │   ├── ProductTest.php
+│   │   ├── StockMovementTest.php
+│   │   └── SupplierTest.php
+│   └── Unit/
+│       ├── CategoryUnitTest.php
+│       ├── ProductUnitTest.php
+│       ├── StockMovementUnitTest.php
+│       └── SupplierUnitTest.php
+└── routes/
+```
+
+## 🗄️ Modelos
+
+### Category
+- Categorización de productos
+- Soft deletes
+- Slug único
+- Color personalizado
+- Scope: `active()`
+
+### Product
+- Gestión completa de productos
+- UUID v7 como clave primaria
+- Soft deletes
+- Barcode y SKU únicos
+- Relaciones: Category, Supplier, StockMovements
+- Scopes: `active()`, `lowStock()`
+- Accessors: formateo de precios, cálculo de IVA
+
+### Supplier
+- Información de proveedores
+- Relación con productos
+- Campos opcionales de contacto
+
+### StockMovement
+- Trazabilidad de movimientos
+- Tipos: compra, venta, ajuste, merma
+- Relaciones: Product, User
+- Scopes: `byType()`, `forProduct()`
+
+## 🔑 Factories
+
+Cada modelo cuenta con factory completo y estados personalizados:
+
+- **CategoryFactory**: `active()`, `inactive()`
+- **ProductFactory**: `active()`, `inactive()`, `outOfStock()`, `lowStock()`
+- **StockMovementFactory**: `purchase()`, `sale()`, `adjustment()`, `waste()`
+- **SupplierFactory**: Datos realistas de proveedores
+
+## 📝 Licencia
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
