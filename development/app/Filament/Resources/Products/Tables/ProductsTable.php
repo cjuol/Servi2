@@ -2,16 +2,23 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Models\StockMovement;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 
 class ProductsTable
 {
@@ -85,6 +92,50 @@ class ProductsTable
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('adjust_stock')
+                    ->label('Ajustar Stock')
+                    ->icon('heroicon-o-arrow-path')
+                    ->form([
+                        TextInput::make('quantity')
+                            ->label('Cantidad')
+                            ->required()
+                            ->numeric()
+                            ->helperText('Usa números positivos para entradas y negativos para salidas'),
+                        Select::make('type')
+                            ->label('Tipo de movimiento')
+                            ->required()
+                            ->options([
+                                StockMovement::TYPE_PURCHASE => 'Compra',
+                                StockMovement::TYPE_ADJUSTMENT => 'Ajuste',
+                                StockMovement::TYPE_WASTE => 'Merma',
+                                'return' => 'Devolución',
+                            ]),
+                        Textarea::make('reason')
+                            ->label('Motivo')
+                            ->rows(3)
+                            ->placeholder('Describe el motivo del ajuste (opcional)'),
+                    ])
+                    ->action(function ($record, array $data): void {
+                        DB::transaction(function () use ($record, $data) {
+                            // Crear el registro de movimiento
+                            StockMovement::create([
+                                'product_id' => $record->id,
+                                'user_id' => auth()->id(),
+                                'quantity' => $data['quantity'],
+                                'type' => $data['type'],
+                                'reason' => $data['reason'] ?? null,
+                            ]);
+
+                            // Actualizar el stock del producto
+                            $record->increment('stock_quantity', $data['quantity']);
+                        });
+
+                        Notification::make()
+                            ->success()
+                            ->title('Stock ajustado correctamente')
+                            ->body("Se ha modificado el stock en {$data['quantity']} unidades.")
+                            ->send();
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

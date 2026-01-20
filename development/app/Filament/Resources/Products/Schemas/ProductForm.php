@@ -56,7 +56,10 @@ class ProductForm
                     ->label('Stock actual')
                     ->required()
                     ->numeric()
-                    ->default(0),
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->default(0)
+                    ->helperText('El stock solo se puede modificar mediante ajustes de inventario'),
                 TextInput::make('low_stock_threshold')
                     ->label('Umbral de stock bajo')
                     ->required()
