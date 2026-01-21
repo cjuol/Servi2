@@ -66,8 +66,12 @@
     <!-- Script para detectar y aplicar el tema -->
     <script>
         // Sincronizar con el tema de Filament
-        if (localStorage.getItem('theme') === 'dark' || 
-            (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        const theme = localStorage.getItem('theme');
+        const isDark = theme === 'dark' || 
+                       (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) ||
+                       (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        
+        if (isDark) {
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
