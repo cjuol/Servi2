@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,11 +20,16 @@ class Order extends Model
         'status',
         'total',
         'notes',
+        'payment_method',
+        'ticket_number',
+        'stripe_payment_id',
+        'tip',
     ];
 
     protected $casts = [
         'total' => 'integer',
         'status' => OrderStatus::class,
+        'payment_method' => PaymentMethod::class,
     ];
 
     /**

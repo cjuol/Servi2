@@ -6,6 +6,7 @@ enum OrderStatus: string
 {
     case OPEN = 'open';
     case CLOSED = 'closed';
+    case COMPLETED = 'completed';
     case CANCELLED = 'cancelled';
 
     /**
@@ -16,6 +17,7 @@ enum OrderStatus: string
         return match($this) {
             self::OPEN => 'Abierto',
             self::CLOSED => 'Cerrado',
+            self::COMPLETED => 'Completado',
             self::CANCELLED => 'Cancelado',
         };
     }
@@ -28,6 +30,7 @@ enum OrderStatus: string
         return match($this) {
             self::OPEN => 'warning',
             self::CLOSED => 'success',
+            self::COMPLETED => 'success',
             self::CANCELLED => 'danger',
         };
     }

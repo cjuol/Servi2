@@ -2,8 +2,14 @@
 
 namespace App\Livewire\Pos;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use App\Models\Category;
+use App\Models\Order;
 use App\Models\Product;
+use App\Models\StockMovement;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 
@@ -12,6 +18,14 @@ class OrderTerminal extends Component
     public $selectedCategory = null;
     public $cart = [];
     public $searchTerm = '';
+    public $showPaymentModal = false;
+    public $paymentMethod = null;
+    public $lastOrderId = null;
+    public $selectedTable = null;
+    public $tip = 0;
+    
+    // Para cálculo de cambio en efectivo
+    public $cashReceived = null;
 
     /**
      * Selecciona una categoría para filtrar productos
@@ -51,6 +65,7 @@ class OrderTerminal extends Component
                 'id' => $product->id,
                 'name' => $product->name,
                 'price' => $product->sale_price,
+                'tax_rate' => $product->tax_rate ?? 0,
                 'quantity' => 1,
                 'track_stock' => $product->track_stock,
                 'stock_quantity' => $product->stock_quantity,
@@ -104,6 +119,10 @@ class OrderTerminal extends Component
     public function clearCart()
     {
         $this->cart = [];
+        $this->cashReceived = null;
+        
+        // Forzar actualización del componente para limpiar totales
+        $this->dispatch('$refresh');
     }
 
     /**
@@ -117,11 +136,15 @@ class OrderTerminal extends Component
     }
 
     /**
-     * Calcula el IVA (21%)
+     * Calcula el IVA según el tax_rate de cada producto
      */
     public function getTaxProperty()
     {
-        return $this->subtotal * 0.21;
+        return collect($this->cart)->sum(function ($item) {
+            $taxRate = ($item['tax_rate'] ?? 0) / 100;
+            $subtotalItem = $item['price'] * $item['quantity'];
+            return $subtotalItem * $taxRate;
+        });
     }
 
     /**
@@ -130,6 +153,180 @@ class OrderTerminal extends Component
     public function getTotalProperty()
     {
         return $this->subtotal + $this->tax;
+    }
+    
+    /**
+     * Computed property para calcular el cambio
+     */
+    public function getChangeProperty()
+    {
+        if (!$this->cashReceived) {
+            return 0;
+        }
+        
+        $received = (int) ($this->cashReceived * 100); // Convertir a céntimos
+        return max(0, $received - $this->total);
+    }
+
+    /**
+     * Abre el modal de pago
+     */
+    public function openPaymentModal()
+    {
+        if (empty($this->cart)) {
+            return;
+        }
+        
+        $this->showPaymentModal = true;
+        $this->paymentMethod = null;
+        $this->cashReceived = null;
+    }
+
+    /**
+     * Cierra el modal de pago
+     */
+    public function closePaymentModal()
+    {
+        $this->showPaymentModal = false;
+        $this->paymentMethod = null;
+        $this->cashReceived = null;
+    }
+
+    /**
+     * Selecciona el método de pago
+     */
+    public function selectPaymentMethod($method)
+    {
+        $this->paymentMethod = $method;
+        
+        // Para efectivo, resetear el input de dinero recibido
+        if ($method === 'cash') {
+            $this->cashReceived = null;
+        }
+    }
+
+    /**
+     * Procesa el pago (unificado para efectivo y tarjeta)
+     */
+    public function processPayment()
+    {
+        // Validaciones
+        if (empty($this->cart)) {
+            session()->flash('error', 'El carrito está vacío');
+            return;
+        }
+
+        if (!$this->paymentMethod) {
+            session()->flash('error', 'Debe seleccionar un método de pago');
+            return;
+        }
+
+        try {
+            // Log temporal para debug
+            \Log::info('Procesando pago', [
+                'payment_method' => $this->paymentMethod,
+                'cart_items' => count($this->cart),
+                'total' => $this->total
+            ]);
+
+            // Determinar el enum del método de pago
+            $method = $this->paymentMethod === 'cash' ? PaymentMethod::CASH : PaymentMethod::CARD;
+            
+            // Completar la orden
+            $order = $this->completeOrder($method);
+            $this->lastOrderId = $order->id;
+            
+            \Log::info('Orden creada exitosamente', ['order_id' => $order->id]);
+            
+            // Limpiar carrito y resetear estado COMPLETO
+            $this->clearCart();
+            $this->closePaymentModal();
+            $this->reset(['searchTerm', 'selectedCategory', 'selectedTable']);
+            
+            session()->flash('success', 'Pago procesado correctamente');
+            
+            // Abrir el ticket en una nueva ventana
+            $this->dispatch('open-ticket', orderId: $order->id);
+        } catch (\Exception $e) {
+            \Log::error('Error procesando pago', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            session()->flash('error', 'Error al procesar el pago: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Completa el pedido con transacción DB
+     * Garantiza atomicidad: si algo falla, se hace rollback completo
+     */
+    protected function completeOrder(PaymentMethod $paymentMethod): Order
+    {
+        return DB::transaction(function () use ($paymentMethod) {
+            // 1. Generar número de ticket único
+            $ticketNumber = $this->generateTicketNumber();
+
+            // 2. Crear el pedido
+            $order = Order::create([
+                'user_id' => Auth::id(),
+                'status' => OrderStatus::COMPLETED,
+                'payment_method' => $paymentMethod,
+                'total' => $this->total,
+                'ticket_number' => $ticketNumber,
+            ]);
+
+            // 3. Crear los items del pedido, actualizar stock y generar movimientos
+            foreach ($this->cart as $item) {
+                // Crear el item del pedido
+                $order->items()->create([
+                    'product_id' => $item['id'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['price'],
+                    'tax_rate' => $item['tax_rate'],
+                    'subtotal' => $item['price'] * $item['quantity'],
+                ]);
+
+                // Obtener el producto
+                $product = Product::find($item['id']);
+                
+                if (!$product) {
+                    throw new \Exception("Producto no encontrado: ID {$item['id']}");
+                }
+
+                // Si el producto trackea stock
+                if ($product->track_stock) {
+                    // Verificar stock disponible ANTES de decrementar
+                    if ($product->stock_quantity < $item['quantity']) {
+                        throw new \Exception("Stock insuficiente para: {$product->name}. Stock actual: {$product->stock_quantity}, requerido: {$item['quantity']}");
+                    }
+
+                    // Usar decrement atómico para evitar race conditions
+                    $product->decrement('stock_quantity', $item['quantity']);
+                    
+                    // Crear el registro en StockMovement (movimiento de salida por venta)
+                    StockMovement::create([
+                        'product_id' => $product->id,
+                        'user_id' => Auth::id(),
+                        'quantity' => -$item['quantity'], // Negativo porque es una salida
+                        'type' => StockMovement::TYPE_SALE,
+                        'reason' => "Venta TPV - Ticket #{$ticketNumber}",
+                    ]);
+                }
+            }
+
+            return $order;
+        });
+    }
+
+    /**
+     * Genera un número de ticket único
+     */
+    protected function generateTicketNumber(): string
+    {
+        $date = now()->format('Ymd');
+        $count = Order::whereDate('created_at', now()->toDateString())->count() + 1;
+        
+        return $date . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
     }
 
     /**

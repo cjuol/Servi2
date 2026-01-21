@@ -93,7 +93,142 @@
 - **Testing**: PHPUnit (141 tests, 265 aserciones)
 - **Arquitectura**: Event-Driven (Events & Listeners)
 
-## 📦 Requisitos Previos
+## �️ Diagrama de Base de Datos
+
+```mermaid
+erDiagram
+    users ||--o{ orders : "crea"
+    users ||--o{ stock_movements : "registra"
+    users {
+        uuid id PK
+        string name
+        string slug UK
+        string email UK
+        string avatar
+        string password
+        string role
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    categories ||--o{ products : "contiene"
+    categories {
+        uuid id PK
+        string name
+        string slug UK
+        string color
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    suppliers ||--o{ products : "provee"
+    suppliers {
+        uuid id PK
+        string name
+        string slug UK
+        string contact_name
+        string email
+        string phone
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    products ||--o{ order_items : "incluido_en"
+    products ||--o{ stock_movements : "tiene"
+    products {
+        uuid id PK
+        uuid category_id FK
+        uuid supplier_id FK
+        string name
+        string slug UK
+        string barcode UK
+        string sku UK
+        text description
+        string image_path
+        integer cost_price
+        integer sale_price
+        integer tax_rate
+        integer stock_quantity
+        integer low_stock_threshold
+        boolean is_active
+        boolean track_stock
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    stock_movements {
+        uuid id PK
+        uuid product_id FK
+        uuid user_id FK
+        integer quantity
+        string type
+        string reason
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    restaurant_tables ||--o{ orders : "tiene"
+    restaurant_tables {
+        uuid id PK
+        string name
+        integer capacity
+        boolean is_available
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    orders ||--o{ order_items : "contiene"
+    orders {
+        uuid id PK
+        uuid restaurant_table_id FK
+        uuid user_id FK
+        string status
+        integer total
+        text notes
+        string payment_method
+        string ticket_number
+        string stripe_payment_id
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    order_items {
+        uuid id PK
+        uuid order_id FK
+        uuid product_id FK
+        integer quantity
+        integer unit_price
+        integer tax_rate
+        integer subtotal
+        text notes
+        timestamp created_at
+        timestamp updated_at
+    }
+```
+
+### Relaciones principales:
+- **users → orders**: Un usuario (camarero/admin) crea múltiples pedidos
+- **users → stock_movements**: Un usuario registra movimientos de stock
+- **categories → products**: Una categoría contiene múltiples productos
+- **suppliers → products**: Un proveedor suministra múltiples productos
+- **products → order_items**: Un producto puede estar en múltiples líneas de pedido
+- **products → stock_movements**: Un producto tiene múltiples movimientos de stock
+- **restaurant_tables → orders**: Una mesa tiene múltiples pedidos históricos
+- **orders → order_items**: Un pedido contiene múltiples líneas/ítems
+
+### Notas de diseño:
+- Todos los IDs son **UUID v7** para mejor distribución y ordenamiento cronológico
+- Los precios se guardan en **céntimos** (integer) para evitar errores de redondeo
+- **Soft Deletes** en `categories` y `products` para preservar datos históricos
+- **Snapshot Logic** en `order_items`: se copian precios e IVA del producto al crear la línea
+- **Stock tracking opcional**: `products.track_stock` permite desactivar control para servicios
+
+---
+
+## �📦 Requisitos Previos
 
 - Docker Engine 20.10 o superior
 - Docker Compose v2.0 o superior

@@ -14,6 +14,7 @@ class StockMovement extends Model
     protected $fillable = [
         'product_id',
         'user_id',
+        'delivery_note_id',
         'quantity',
         'type',
         'reason',
@@ -38,6 +39,11 @@ class StockMovement extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function deliveryNote(): BelongsTo
+    {
+        return $this->belongsTo(DeliveryNote::class);
     }
 
     // Scopes

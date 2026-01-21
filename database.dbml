@@ -1,0 +1,367 @@
+// DBML - Database Markup Language
+// Sistema de Gestión de Restaurante - Servi2
+
+Project Servi2 {
+  database_type: 'PostgreSQL'
+  Note: 'Sistema POS para restaurantes con gestión de inventario, mesas, pedidos y compras'
+}
+
+// ============================================
+// TABLAS DE USUARIOS Y AUTENTICACIÓN
+// ============================================
+
+Table users {
+  id uuid [pk]
+  name varchar [not null]
+  slug varchar [unique, not null]
+  email varchar [unique, not null]
+  email_verified_at timestamp [null]
+  avatar varchar [null]
+  role varchar [not null, default: 'waiter', note: 'Roles: admin, waiter, cook, cashier']
+  password varchar [not null]
+  remember_token varchar [null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  
+  Note: 'Usuarios del sistema con diferentes roles'
+  Indexes {
+    email [unique]
+    slug [unique]
+  }
+}
+
+Table password_reset_tokens {
+  email varchar [pk]
+  token varchar [not null]
+  created_at timestamp [null]
+  Note: 'Tokens para reseteo de contraseñas'
+}
+
+Table sessions {
+  id varchar [pk]
+  user_id uuid [null, ref: > users.id]
+  ip_address varchar(45) [null]
+  user_agent text [null]
+  payload text [not null]
+  last_activity integer [not null]
+  
+  Note: 'Sesiones activas de usuarios'
+  Indexes {
+    user_id
+    last_activity
+  }
+}
+
+// ============================================
+// INVENTARIO Y CATÁLOGO
+// ============================================
+
+Table categories {
+  id uuid [pk]
+  name varchar [not null]
+  slug varchar [unique, not null]
+  color varchar [null, note: 'Color hexadecimal para UI (ej: #FF0000)']
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  deleted_at timestamp [null]
+  
+  Note: 'Categorías de productos'
+  Indexes {
+    slug [unique]
+    is_active
+  }
+}
+
+Table suppliers {
+  id uuid [pk]
+  name varchar [not null]
+  slug varchar [unique, not null]
+  contact_name varchar [null]
+  email varchar [null]
+  phone varchar [null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  
+  Note: 'Proveedores de productos'
+  Indexes {
+    slug [unique]
+  }
+}
+
+Table products {
+  id uuid [pk]
+  category_id uuid [null, ref: > categories.id]
+  supplier_id uuid [null, ref: > suppliers.id]
+  name varchar [not null]
+  slug varchar [unique, not null]
+  barcode varchar [unique, null]
+  sku varchar [unique, null]
+  description text [null]
+  image_path varchar [null]
+  cost_price integer [not null, default: 0, note: 'Precio compra (céntimos)']
+  sale_price integer [not null, default: 0, note: 'Precio venta (céntimos)']
+  tax_rate integer [not null, default: 10]
+  stock_quantity integer [not null, default: 0]
+  low_stock_threshold integer [not null, default: 5]
+  is_active boolean [not null, default: true]
+  track_stock boolean [not null, default: true]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  deleted_at timestamp [null]
+  
+  Note: 'Productos del catálogo'
+  Indexes {
+    slug [unique]
+    barcode [unique]
+    sku [unique]
+    category_id
+    supplier_id
+    is_active
+  }
+}
+
+// ============================================
+// GESTIÓN DE COMPRAS Y PROVEEDORES (NUEVO DEL DIAGRAMA)
+// ============================================
+
+Table budgets {
+  id uuid [pk]
+  supplier_id uuid [not null, ref: > suppliers.id]
+  date timestamp [not null]
+  tax_base integer [not null, default: 0, note: 'Base imponible total (céntimos)']
+  tax_rate_quantity integer [not null, default: 0, note: 'Total impuestos (céntimos)']
+  notes text [null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  deleted_at timestamp [null]
+
+  Note: 'Presupuestos de proveedores'
+}
+
+Table budget_details {
+  id uuid [pk]
+  budget_id uuid [not null, ref: > budgets.id]
+  product_id uuid [not null, ref: > products.id]
+  quantity integer [not null, default: 1]
+  tax_base integer [not null, note: 'Base por línea (céntimos)']
+  tax_rate_quantity integer [not null, note: 'Impuesto por línea (céntimos)']
+  total integer [not null, note: 'Total línea (céntimos)']
+  notes text [null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  deleted_at timestamp [null]
+
+  Note: 'Líneas de detalle del presupuesto'
+}
+
+Table invoices {
+  id uuid [pk]
+  supplier_id uuid [not null, ref: > suppliers.id]
+  date timestamp [not null]
+  tax_base integer [not null, default: 0]
+  tax_rate_quantity integer [not null, default: 0]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  deleted_at timestamp [null]
+
+  Note: 'Facturas de proveedores'
+}
+
+Table delivery_notes {
+  id uuid [pk]
+  budget_id uuid [null, ref: > budgets.id, note: 'Puede venir de un presupuesto']
+  invoice_id uuid [null, ref: > invoices.id, note: 'Asignado a una factura']
+  date timestamp [not null]
+  tax_base integer [not null, default: 0]
+  tax_rate_quantity integer [not null, default: 0]
+  stored boolean [not null, default: false, note: 'Si true, el stock ya se sumó']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  deleted_at timestamp [null]
+
+  Note: 'Albaranes de entrega / Recepción de mercancía'
+}
+
+Table delivery_note_details {
+  id uuid [pk]
+  delivery_note_id uuid [not null, ref: > delivery_notes.id]
+  product_id uuid [not null, ref: > products.id]
+  quantity integer [not null, default: 1]
+  tax_base integer [not null]
+  tax_rate_quantity integer [not null]
+  total integer [not null]
+  notes text [null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  deleted_at timestamp [null]
+
+  Note: 'Líneas de detalle del albarán'
+}
+
+// ============================================
+// MOVIMIENTOS DE STOCK (ACTUALIZADO)
+// ============================================
+
+Table stock_movements {
+  id uuid [pk]
+  product_id uuid [not null, ref: > products.id]
+  user_id uuid [null, ref: > users.id]
+  delivery_note_id uuid [null, ref: > delivery_notes.id, note: 'Link al albarán si es compra']
+  quantity integer [not null, note: 'Positivo (entrada) o Negativo (salida)']
+  type varchar [not null]
+  reason varchar [null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  
+  Note: 'Registro de auditoría de movimientos de stock (Kardex)'
+  Indexes {
+    (product_id, created_at) [name: 'idx_stock_movements_product_date']
+    type
+  }
+}
+
+// ============================================
+// MESAS Y PEDIDOS
+// ============================================
+
+Table restaurant_tables {
+  id uuid [pk]
+  name varchar [not null]
+  capacity integer [not null, default: 4]
+  is_available boolean [not null, default: true]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  
+  Note: 'Mesas del restaurante'
+  Indexes {
+    is_available
+  }
+}
+
+Table orders {
+  id uuid [pk]
+  restaurant_table_id uuid [null, ref: > restaurant_tables.id]
+  user_id uuid [not null, ref: > users.id]
+  status varchar [not null, default: 'open']
+  payment_method varchar [null]
+  ticket_number varchar [unique, null]
+  stripe_payment_id varchar [null]
+  total integer [not null, default: 0]
+  tip integer [not null, default: 0]
+  notes text [null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  
+  Note: 'Pedidos/Comandas del restaurante'
+  Indexes {
+    (status, created_at) [name: 'idx_orders_status_date']
+    restaurant_table_id
+    user_id
+    ticket_number [unique]
+  }
+}
+
+Table order_items {
+  id uuid [pk]
+  order_id uuid [not null, ref: > orders.id]
+  product_id uuid [not null, ref: > products.id]
+  quantity integer [not null, default: 1]
+  unit_price integer [not null]
+  tax_rate integer [not null]
+  subtotal integer [not null]
+  notes text [null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  
+  Note: 'Líneas de pedido'
+  Indexes {
+    order_id
+    product_id
+  }
+}
+
+// ============================================
+// TABLAS DEL SISTEMA (CACHE, JOBS)
+// ============================================
+
+Table cache {
+  key varchar [pk]
+  value text [not null]
+  expiration integer [not null]
+}
+
+Table cache_locks {
+  key varchar [pk]
+  owner varchar [not null]
+  expiration integer [not null]
+}
+
+Table jobs {
+  id bigint [pk, increment]
+  queue varchar [not null]
+  payload text [not null]
+  attempts integer [not null]
+  reserved_at integer [null]
+  available_at integer [not null]
+  created_at integer [not null]
+  Indexes {
+    (queue, reserved_at)
+  }
+}
+
+Table job_batches {
+  id varchar [pk]
+  name varchar [not null]
+  total_jobs integer [not null]
+  pending_jobs integer [not null]
+  failed_jobs integer [not null]
+  failed_job_ids text [not null]
+  options text [null]
+  cancelled_at integer [null]
+  created_at integer [not null]
+  finished_at integer [null]
+}
+
+Table failed_jobs {
+  id bigint [pk, increment]
+  uuid varchar [unique, not null]
+  connection text [not null]
+  queue text [not null]
+  payload text [not null]
+  exception text [not null]
+  failed_at timestamp [not null, default: 'CURRENT_TIMESTAMP']
+  Indexes {
+    uuid [unique]
+  }
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+Enum OrderStatus {
+  open
+  closed
+  cancelled
+}
+
+Enum PaymentMethod {
+  cash
+  card
+  stripe
+}
+
+Enum UserRole {
+  admin
+  waiter
+  cook
+  cashier
+}
+
+Enum StockMovementType {
+  sale
+  purchase
+  adjustment
+  waste
+}

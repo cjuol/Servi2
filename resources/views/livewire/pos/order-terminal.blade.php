@@ -222,7 +222,12 @@
                     <div class="flex justify-between items-start mb-2">
                         <div class="flex-1">
                             <h4 class="text-sm font-medium text-gray-900 dark:text-white">{{ $item['name'] }}</h4>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">€{{ number_format($item['price'] / 100, 2) }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                €{{ number_format($item['price'] / 100, 2) }}
+                                @if(isset($item['tax_rate']) && $item['tax_rate'] > 0)
+                                    <span class="ml-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-1.5 py-0.5 rounded">IVA {{ $item['tax_rate'] }}%</span>
+                                @endif
+                            </p>
                         </div>
                         <button 
                             wire:click="removeFromCart('{{ $item['id'] }}')"
@@ -271,9 +276,15 @@
                     <span>€{{ number_format($this->subtotal / 100, 2) }}</span>
                 </div>
                 <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                    <span>IVA (21%):</span>
+                    <span>IVA:</span>
                     <span>€{{ number_format($this->tax / 100, 2) }}</span>
                 </div>
+                @if($tip > 0)
+                <div class="flex justify-between text-sm text-green-600 dark:text-green-400">
+                    <span>Propina:</span>
+                    <span>€{{ number_format($tip / 100, 2) }}</span>
+                </div>
+                @endif
                 <div class="flex justify-between text-lg font-bold text-gray-900 dark:text-white pt-2 border-t border-gray-300 dark:border-gray-600">
                     <span>Total:</span>
                     <span>€{{ number_format($this->total / 100, 2) }}</span>
@@ -282,16 +293,200 @@
 
             {{-- Botones de acción --}}
             <div class="space-y-2">
-                <button class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition shadow-lg">
+                <button 
+                    wire:click="openPaymentModal"
+                    @if(empty($cart)) disabled @endif
+                    class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition shadow-lg"
+                >
                     Cobrar Pedido
-                </button>
-                <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition shadow-lg">
-                    Guardar Pedido
-                </button>
-                <button class="w-full bg-gray-600 hover:bg-gray-500 text-white font-semibold py-3 px-4 rounded-lg transition shadow-lg">
-                    Cancelar
                 </button>
             </div>
         </div>
+    </aside>
+
+    {{-- MODAL DE PAGO --}}
+    @if($showPaymentModal)
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" wire:click.self="closePaymentModal">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-lg m-4">
+            {{-- Header del Modal --}}
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">Procesar Pago</h3>
+                    <button wire:click="closePaymentModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                {{-- Total en Grande --}}
+                <div class="mt-6 text-center">
+                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Total a cobrar</div>
+                    <div class="text-5xl font-bold text-gray-900 dark:text-white">
+                        €{{ number_format($this->total / 100, 2) }}
+                    </div>
+                </div>
+            </div>
+
+            {{-- Cuerpo del Modal --}}
+            <div class="p-6 space-y-6">
+                @if(!$paymentMethod)
+                    {{-- Selección de Método de Pago - Botones GRANDES --}}
+                    <div class="grid grid-cols-2 gap-4">
+                        <button 
+                            wire:click="selectPaymentMethod('cash')"
+                            class="group p-8 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200"
+                        >
+                            <div class="text-6xl mb-4">💵</div>
+                            <div class="font-bold text-xl text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400">
+                                Efectivo
+                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                Pago en caja
+                            </div>
+                        </button>
+
+                        <button 
+                            wire:click="selectPaymentMethod('card')"
+                            class="group p-8 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200"
+                        >
+                            <div class="text-6xl mb-4">💳</div>
+                            <div class="font-bold text-xl text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                Tarjeta
+                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                Datáfono externo
+                            </div>
+                        </button>
+                    </div>
+                
+                @elseif($paymentMethod === 'cash')
+                    {{-- Pago en Efectivo - Cálculo de Cambio --}}
+                    <div class="space-y-4">
+                        <div class="text-center">
+                            <div class="text-5xl mb-4">💵</div>
+                            <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Pago en Efectivo</h4>
+                        </div>
+
+                        {{-- Input de dinero recibido --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Dinero recibido del cliente
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">€</span>
+                                <input 
+                                    type="number" 
+                                    step="0.01"
+                                    wire:model.live="cashReceived"
+                                    placeholder="0.00"
+                                    class="w-full pl-10 pr-4 py-4 text-2xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:bg-gray-700 dark:text-white"
+                                    autofocus
+                                >
+                            </div>
+                        </div>
+
+                        {{-- Mostrar cambio --}}
+                        @if($cashReceived && $this->change >= 0)
+                        <div class="bg-green-50 dark:bg-green-900/20 border-2 border-green-500 rounded-lg p-4">
+                            <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Cambio a devolver</div>
+                            <div class="text-4xl font-bold text-green-600 dark:text-green-400">
+                                €{{ number_format($this->change / 100, 2) }}
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- Botones de acción --}}
+                        <div class="flex gap-3 pt-4">
+                            <button 
+                                wire:click="closePaymentModal"
+                                class="flex-1 px-6 py-4 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition font-semibold text-lg"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                wire:click="processPayment"
+                                class="flex-1 px-6 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold text-lg shadow-lg"
+                            >
+                                ✓ Confirmar Cobro
+                            </button>
+                        </div>
+                    </div>
+
+                @elseif($paymentMethod === 'card')
+                    {{-- Pago con Tarjeta - Datáfono Externo --}}
+                    <div class="space-y-6">
+                        <div class="text-center">
+                            <div class="text-6xl mb-4">💳</div>
+                            <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Pago con Tarjeta</h4>
+                            <p class="text-gray-600 dark:text-gray-400">Procesar cobro en terminal físico</p>
+                        </div>
+
+                        {{-- Instrucciones --}}
+                        <div class="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-6">
+                            <div class="space-y-3">
+                                <div class="flex items-start gap-3">
+                                    <div class="text-2xl">1️⃣</div>
+                                    <div>
+                                        <div class="font-semibold text-gray-900 dark:text-white">Introduce el importe</div>
+                                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                                            €{{ number_format($this->total / 100, 2) }} en el datáfono
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <div class="text-2xl">2️⃣</div>
+                                    <div>
+                                        <div class="font-semibold text-gray-900 dark:text-white">Procesa el cobro</div>
+                                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                                            Espera la confirmación en el terminal
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <div class="text-2xl">3️⃣</div>
+                                    <div>
+                                        <div class="font-semibold text-gray-900 dark:text-white">Confirma en pantalla</div>
+                                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                                            Pulsa "Confirmar Cobro" para cerrar el ticket
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Botones de acción --}}
+                        <div class="flex gap-3">
+                            <button 
+                                wire:click="closePaymentModal"
+                                class="flex-1 px-6 py-4 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition font-semibold text-lg"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                wire:click="processPayment"
+                                class="flex-1 px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-bold text-lg shadow-lg"
+                            >
+                                ✓ Confirmar Cobro
+                            </button>
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+    @endif
+</div>
+
+{{-- Script para abrir el ticket en nueva ventana --}}
+<script>
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('open-ticket', (event) => {
+            const orderId = event.orderId;
+            const ticketUrl = '{{ route("pos.ticket", ":orderId") }}'.replace(':orderId', orderId);
+            window.open(ticketUrl, '_blank', 'width=800,height=600');
+        });
+    });
+</script>
     </aside>
 </div>

@@ -1,0 +1,402 @@
+{
+  "version": "1.0.0",
+  "darkMode": true,
+  "gridEnabling": false,
+  "detailLevel": "All",
+  "tablePositions": [
+    {
+      "name": "users",
+      "schemaName": "public",
+      "x": -295.82608695652175,
+      "y": 214.6913307615439
+    },
+    {
+      "name": "password_reset_tokens",
+      "schemaName": "public",
+      "x": 605.697265625,
+      "y": 12
+    },
+    {
+      "name": "sessions",
+      "schemaName": "public",
+      "x": 627.287387574823,
+      "y": 241.49735082843358
+    },
+    {
+      "name": "categories",
+      "schemaName": "public",
+      "x": 12,
+      "y": 880
+    },
+    {
+      "name": "suppliers",
+      "schemaName": "public",
+      "x": 12,
+      "y": 1214
+    },
+    {
+      "name": "products",
+      "schemaName": "public",
+      "x": 536.76513671875,
+      "y": 761
+    },
+    {
+      "name": "budgets",
+      "schemaName": "public",
+      "x": 12,
+      "y": 1913
+    },
+    {
+      "name": "budget_details",
+      "schemaName": "public",
+      "x": 334.59423828125,
+      "y": 1913
+    },
+    {
+      "name": "invoices",
+      "schemaName": "public",
+      "x": 1817.4560350909283,
+      "y": 690.5752508361203
+    },
+    {
+      "name": "delivery_notes",
+      "schemaName": "public",
+      "x": 2187.408132903951,
+      "y": 1273.6688963210702
+    },
+    {
+      "name": "delivery_note_details",
+      "schemaName": "public",
+      "x": 12,
+      "y": 2283
+    },
+    {
+      "name": "stock_movements",
+      "schemaName": "public",
+      "x": 1092.51708984375,
+      "y": 450
+    },
+    {
+      "name": "restaurant_tables",
+      "schemaName": "public",
+      "x": 12,
+      "y": 1548
+    },
+    {
+      "name": "orders",
+      "schemaName": "public",
+      "x": 536.76513671875,
+      "y": 1447
+    },
+    {
+      "name": "order_items",
+      "schemaName": "public",
+      "x": 1092.51708984375,
+      "y": 784
+    },
+    {
+      "name": "cache",
+      "schemaName": "public",
+      "x": 12,
+      "y": 12
+    },
+    {
+      "name": "cache_locks",
+      "schemaName": "public",
+      "x": 308.8486328125,
+      "y": 12
+    },
+    {
+      "name": "jobs",
+      "schemaName": "public",
+      "x": 927.0048828125,
+      "y": 12
+    },
+    {
+      "name": "job_batches",
+      "schemaName": "public",
+      "x": 1546.67236328125,
+      "y": 12
+    },
+    {
+      "name": "failed_jobs",
+      "schemaName": "public",
+      "x": 1234.10498046875,
+      "y": 12
+    }
+  ],
+  "tableGroupCollapseStates": [],
+  "stickyNoteLayouts": [],
+  "referencePaths": [
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "users",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "user_id"
+      ],
+      "secondTableName": "sessions",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "categories",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "category_id"
+      ],
+      "secondTableName": "products",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "suppliers",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "supplier_id"
+      ],
+      "secondTableName": "products",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "suppliers",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "supplier_id"
+      ],
+      "secondTableName": "budgets",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "budgets",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "budget_id"
+      ],
+      "secondTableName": "budget_details",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "products",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "product_id"
+      ],
+      "secondTableName": "budget_details",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "suppliers",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "supplier_id"
+      ],
+      "secondTableName": "invoices",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "budgets",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "budget_id"
+      ],
+      "secondTableName": "delivery_notes",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "invoices",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "invoice_id"
+      ],
+      "secondTableName": "delivery_notes",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "delivery_notes",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "delivery_note_id"
+      ],
+      "secondTableName": "delivery_note_details",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "products",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "product_id"
+      ],
+      "secondTableName": "delivery_note_details",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "products",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "product_id"
+      ],
+      "secondTableName": "stock_movements",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "users",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "user_id"
+      ],
+      "secondTableName": "stock_movements",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "delivery_notes",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "delivery_note_id"
+      ],
+      "secondTableName": "stock_movements",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "restaurant_tables",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "restaurant_table_id"
+      ],
+      "secondTableName": "orders",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "users",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "user_id"
+      ],
+      "secondTableName": "orders",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "orders",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "order_id"
+      ],
+      "secondTableName": "order_items",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "products",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "product_id"
+      ],
+      "secondTableName": "order_items",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    }
+  ]
+}
