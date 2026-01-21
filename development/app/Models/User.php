@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserRole;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, HasAvatar
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasUuids, Notifiable;
@@ -27,6 +28,7 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'slug',
         'email',
+        'avatar',
         'password',
         'role',
     ];
@@ -102,6 +104,14 @@ class User extends Authenticatable implements FilamentUser
     {
         // Solo los administradores pueden acceder al panel admin
         return $this->role === UserRole::ADMIN;
+    }
+
+    /**
+     * Obtiene la URL del avatar para Filament.
+     */
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return $this->avatar ? asset('storage/' . $this->avatar) : null;
     }
 
     /**

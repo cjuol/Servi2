@@ -29,7 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('/')
             ->login()
-            ->profile(EditProfile::class, isSimple: true)
+            ->profile(EditProfile::class, isSimple: false)
             ->colors([
                 'primary' => Color::Cyan,   // Destaca muchísimo en modo oscuro
                 'gray'    => Color::Slate,  // El gris por defecto, funciona bien
