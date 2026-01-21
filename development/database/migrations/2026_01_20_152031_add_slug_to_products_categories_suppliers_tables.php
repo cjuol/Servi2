@@ -12,19 +12,27 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->string('slug')->unique()->after('name');
+            if (!Schema::hasColumn('products', 'slug')) {
+                $table->string('slug')->unique()->after('name');
+            }
         });
 
         Schema::table('categories', function (Blueprint $table) {
-            $table->string('slug')->unique()->after('name');
+            if (!Schema::hasColumn('categories', 'slug')) {
+                $table->string('slug')->unique()->after('name');
+            }
         });
 
         Schema::table('suppliers', function (Blueprint $table) {
-            $table->string('slug')->unique()->after('name');
+            if (!Schema::hasColumn('suppliers', 'slug')) {
+                $table->string('slug')->unique()->after('name');
+            }
         });
 
         Schema::table('users', function (Blueprint $table) {
-            $table->string('slug')->unique()->after('name');
+            if (!Schema::hasColumn('users', 'slug')) {
+                $table->string('slug')->unique()->after('name');
+            }
         });
     }
 
