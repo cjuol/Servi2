@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Resources\StockMovements\StockMovementResource;
 use App\Models\StockMovement;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -19,7 +20,7 @@ class LatestStockMovementsWidget extends BaseWidget
             ->heading('Últimos Movimientos de Stock')
             ->query(
                 StockMovement::query()
-                    ->with(['product', 'user'])
+                    ->with(['product', 'user', 'order'])
                     ->latest()
                     ->limit(10)
             )
@@ -68,6 +69,9 @@ class LatestStockMovementsWidget extends BaseWidget
                     ->limit(30)
                     ->wrap(),
             ])
+            ->recordUrl(fn (StockMovement $record): string => 
+                StockMovementResource::getUrl('view', ['record' => $record])
+            )
             ->paginated(false);
     }
 }

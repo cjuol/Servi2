@@ -37,14 +37,14 @@
     {
       "name": "products",
       "schemaName": "public",
-      "x": 536.76513671875,
-      "y": 761
+      "x": 383.7941263111991,
+      "y": 862
     },
     {
       "name": "budgets",
       "schemaName": "public",
-      "x": 12,
-      "y": 1913
+      "x": -320.682778767195,
+      "y": 1840.4720008374836
     },
     {
       "name": "budget_details",
@@ -85,8 +85,8 @@
     {
       "name": "orders",
       "schemaName": "public",
-      "x": 536.76513671875,
-      "y": 1447
+      "x": 748.838582965582,
+      "y": 1433.0935445084044
     },
     {
       "name": "order_items",
@@ -332,6 +332,21 @@
       "firstRelation": "1",
       "secondFieldNames": [
         "delivery_note_id"
+      ],
+      "secondTableName": "stock_movements",
+      "secondSchemaName": "public",
+      "secondRelation": "*",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "id"
+      ],
+      "firstTableName": "orders",
+      "firstSchemaName": "public",
+      "firstRelation": "1",
+      "secondFieldNames": [
+        "order_id"
       ],
       "secondTableName": "stock_movements",
       "secondSchemaName": "public",

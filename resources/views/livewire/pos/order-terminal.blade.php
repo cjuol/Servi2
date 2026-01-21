@@ -91,7 +91,7 @@
                 >
                     {{-- Nombre arriba --}}
                     <div class="p-3 pb-2">
-                        <h3 class="text-gray-900 dark:text-white font-medium text-sm line-clamp-2 min-h-[2.5rem]">{{ $product->name }}</h3>
+                        <h3 class="text-gray-900 dark:text-white font-medium text-sm line-clamp-2 min-h-10">{{ $product->name }}</h3>
                     </div>
 
                     {{-- Imagen --}}

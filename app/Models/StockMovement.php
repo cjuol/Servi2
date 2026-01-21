@@ -15,6 +15,7 @@ class StockMovement extends Model
         'product_id',
         'user_id',
         'delivery_note_id',
+        'order_id',
         'quantity',
         'type',
         'reason',
@@ -44,6 +45,11 @@ class StockMovement extends Model
     public function deliveryNote(): BelongsTo
     {
         return $this->belongsTo(DeliveryNote::class);
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 
     // Scopes

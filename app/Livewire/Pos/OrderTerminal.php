@@ -24,6 +24,9 @@ class OrderTerminal extends Component
     public $selectedTable = null;
     public $tip = 0;
     
+    // Nueva propiedad para el flujo refactorizado
+    public ?Order $currentOrder = null;
+    
     // Para cálculo de cambio en efectivo
     public $cashReceived = null;
 
@@ -120,6 +123,7 @@ class OrderTerminal extends Component
     {
         $this->cart = [];
         $this->cashReceived = null;
+        $this->currentOrder = null; // NUEVO: Limpiar orden actual
         
         // Forzar actualización del componente para limpiar totales
         $this->dispatch('$refresh');
@@ -170,6 +174,7 @@ class OrderTerminal extends Component
 
     /**
      * Abre el modal de pago
+     * NUEVO: Ahora genera el ticket (pedido) inmediatamente
      */
     public function openPaymentModal()
     {
@@ -177,16 +182,30 @@ class OrderTerminal extends Component
             return;
         }
         
-        $this->showPaymentModal = true;
-        $this->paymentMethod = null;
-        $this->cashReceived = null;
+        try {
+            // Generar el ticket en la base de datos
+            $this->generateTicket();
+            
+            // Abrir modal de pago
+            $this->showPaymentModal = true;
+            $this->paymentMethod = null;
+            $this->cashReceived = null;
+        } catch (\Exception $e) {
+            \Log::error('Error generando ticket', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            session()->flash('error', 'Error al generar el ticket: ' . $e->getMessage());
+        }
     }
 
     /**
      * Cierra el modal de pago
+     * NUEVO: Si existe una orden sin confirmar, se cancela
      */
     public function closePaymentModal()
     {
+        $this->cancelPayment();
         $this->showPaymentModal = false;
         $this->paymentMethod = null;
         $this->cashReceived = null;
@@ -207,12 +226,13 @@ class OrderTerminal extends Component
 
     /**
      * Procesa el pago (unificado para efectivo y tarjeta)
+     * REFACTORIZADO: Ahora solo confirma el pago de la orden ya creada
      */
     public function processPayment()
     {
         // Validaciones
-        if (empty($this->cart)) {
-            session()->flash('error', 'El carrito está vacío');
+        if (!$this->currentOrder) {
+            session()->flash('error', 'No hay orden pendiente');
             return;
         }
 
@@ -222,21 +242,15 @@ class OrderTerminal extends Component
         }
 
         try {
-            // Log temporal para debug
-            \Log::info('Procesando pago', [
-                'payment_method' => $this->paymentMethod,
-                'cart_items' => count($this->cart),
-                'total' => $this->total
-            ]);
-
             // Determinar el enum del método de pago
             $method = $this->paymentMethod === 'cash' ? PaymentMethod::CASH : PaymentMethod::CARD;
             
-            // Completar la orden
-            $order = $this->completeOrder($method);
-            $this->lastOrderId = $order->id;
+            // Finalizar el pago
+            $this->finalizePayment($method);
             
-            \Log::info('Orden creada exitosamente', ['order_id' => $order->id]);
+            $this->lastOrderId = $this->currentOrder->id;
+            
+            \Log::info('Pago procesado exitosamente', ['order_id' => $this->currentOrder->id]);
             
             // Limpiar carrito y resetear estado COMPLETO
             $this->clearCart();
@@ -246,7 +260,7 @@ class OrderTerminal extends Component
             session()->flash('success', 'Pago procesado correctamente');
             
             // Abrir el ticket en una nueva ventana
-            $this->dispatch('open-ticket', orderId: $order->id);
+            $this->dispatch('open-ticket', orderId: $this->lastOrderId);
         } catch (\Exception $e) {
             \Log::error('Error procesando pago', [
                 'message' => $e->getMessage(),
@@ -257,65 +271,120 @@ class OrderTerminal extends Component
     }
 
     /**
-     * Completa el pedido con transacción DB
-     * Garantiza atomicidad: si algo falla, se hace rollback completo
+     * NUEVO: Genera el ticket (orden) en la base de datos con estado 'open'
+     * No descuenta stock todavía
      */
-    protected function completeOrder(PaymentMethod $paymentMethod): Order
+    protected function generateTicket(): void
     {
-        return DB::transaction(function () use ($paymentMethod) {
+        DB::transaction(function () {
             // 1. Generar número de ticket único
             $ticketNumber = $this->generateTicketNumber();
 
-            // 2. Crear el pedido
-            $order = Order::create([
+            // 2. Crear el pedido con estado 'open'
+            $this->currentOrder = Order::create([
                 'user_id' => Auth::id(),
-                'status' => OrderStatus::COMPLETED,
-                'payment_method' => $paymentMethod,
+                'status' => OrderStatus::OPEN,
+                'payment_method' => null, // Se asignará al confirmar pago
                 'total' => $this->total,
                 'ticket_number' => $ticketNumber,
+                'restaurant_table_id' => $this->selectedTable,
             ]);
 
-            // 3. Crear los items del pedido, actualizar stock y generar movimientos
+            // 3. Crear los items del pedido (sin afectar stock todavía)
             foreach ($this->cart as $item) {
-                // Crear el item del pedido
-                $order->items()->create([
+                $this->currentOrder->items()->create([
                     'product_id' => $item['id'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['price'],
                     'tax_rate' => $item['tax_rate'],
                     'subtotal' => $item['price'] * $item['quantity'],
                 ]);
+            }
 
-                // Obtener el producto
-                $product = Product::find($item['id']);
+            \Log::info('Ticket generado', [
+                'order_id' => $this->currentOrder->id,
+                'ticket_number' => $ticketNumber
+            ]);
+        });
+    }
+
+    /**
+     * NUEVO: Finaliza el pago confirmado
+     * Actualiza la orden a 'closed' y descuenta el stock
+     */
+    protected function finalizePayment(PaymentMethod $paymentMethod): void
+    {
+        if (!$this->currentOrder) {
+            throw new \Exception('No hay orden para finalizar');
+        }
+
+        DB::transaction(function () use ($paymentMethod) {
+            // 1. Actualizar el estado de la orden
+            $this->currentOrder->update([
+                'status' => OrderStatus::COMPLETED,
+                'payment_method' => $paymentMethod,
+            ]);
+
+            // 2. Gestión de stock: Decrementar y registrar movimientos
+            foreach ($this->currentOrder->items as $orderItem) {
+                $product = Product::find($orderItem->product_id);
                 
                 if (!$product) {
-                    throw new \Exception("Producto no encontrado: ID {$item['id']}");
+                    throw new \Exception("Producto no encontrado: ID {$orderItem->product_id}");
                 }
 
                 // Si el producto trackea stock
                 if ($product->track_stock) {
                     // Verificar stock disponible ANTES de decrementar
-                    if ($product->stock_quantity < $item['quantity']) {
-                        throw new \Exception("Stock insuficiente para: {$product->name}. Stock actual: {$product->stock_quantity}, requerido: {$item['quantity']}");
+                    if ($product->stock_quantity < $orderItem->quantity) {
+                        throw new \Exception("Stock insuficiente para: {$product->name}. Stock actual: {$product->stock_quantity}, requerido: {$orderItem->quantity}");
                     }
 
                     // Usar decrement atómico para evitar race conditions
-                    $product->decrement('stock_quantity', $item['quantity']);
+                    $product->decrement('stock_quantity', $orderItem->quantity);
                     
-                    // Crear el registro en StockMovement (movimiento de salida por venta)
+                    // Crear el registro en StockMovement vinculando al pedido
                     StockMovement::create([
                         'product_id' => $product->id,
                         'user_id' => Auth::id(),
-                        'quantity' => -$item['quantity'], // Negativo porque es una salida
+                        'order_id' => $this->currentOrder->id, // NUEVA RELACIÓN
+                        'quantity' => -$orderItem->quantity, // Negativo porque es una salida
                         'type' => StockMovement::TYPE_SALE,
-                        'reason' => "Venta TPV - Ticket #{$ticketNumber}",
+                        'reason' => "Venta TPV - Ticket #{$this->currentOrder->ticket_number}",
                     ]);
                 }
             }
 
-            return $order;
+            \Log::info('Pago finalizado y stock actualizado', [
+                'order_id' => $this->currentOrder->id
+            ]);
         });
+    }
+
+    /**
+     * NUEVO: Cancela el pago pendiente
+     * Elimina la orden si el usuario cierra el modal sin confirmar
+     */
+    protected function cancelPayment(): void
+    {
+        if ($this->currentOrder) {
+            try {
+                $orderId = $this->currentOrder->id;
+                
+                // Hard delete de la orden y sus items (cascade)
+                $this->currentOrder->delete();
+                
+                $this->currentOrder = null;
+                
+                \Log::info('Orden cancelada (modal cerrado sin pagar)', [
+                    'order_id' => $orderId
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Error cancelando orden', [
+                    'message' => $e->getMessage()
+                ]);
+            }
+        }
     }
 
     /**

@@ -274,14 +274,14 @@
     <script>
         window.onload = function() {
             // Pequeño delay para asegurar que todo esté cargado
-            setTimeout(function() {
-                window.print();
-                
-                // Cerrar la ventana después de imprimir (solo funciona si se abrió con window.open)
-                setTimeout(function() {
-                    window.close();
-                }, 500);
-            }, 250);
+            //setTimeout(function() {
+            //    window.print();
+            //    
+            //    // Cerrar la ventana después de imprimir (solo funciona si se abrió con window.open)
+            //    setTimeout(function() {
+            //        window.close();
+            //    }, 500);
+            //}, 250);
         };
     </script>
 </body>

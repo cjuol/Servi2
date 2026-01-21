@@ -208,6 +208,7 @@ Table stock_movements {
   product_id uuid [not null, ref: > products.id]
   user_id uuid [null, ref: > users.id]
   delivery_note_id uuid [null, ref: > delivery_notes.id, note: 'Link al albarán si es compra']
+  order_id uuid [null, ref: > orders.id, note: 'Link al pedido si es venta TPV']
   quantity integer [not null, note: 'Positivo (entrada) o Negativo (salida)']
   type varchar [not null]
   reason varchar [null]
@@ -218,6 +219,7 @@ Table stock_movements {
   Indexes {
     (product_id, created_at) [name: 'idx_stock_movements_product_date']
     type
+    order_id
   }
 }
 
@@ -246,7 +248,6 @@ Table orders {
   status varchar [not null, default: 'open']
   payment_method varchar [null]
   ticket_number varchar [unique, null]
-  stripe_payment_id varchar [null]
   total integer [not null, default: 0]
   tip integer [not null, default: 0]
   notes text [null]

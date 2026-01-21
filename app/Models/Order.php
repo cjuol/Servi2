@@ -22,7 +22,6 @@ class Order extends Model
         'notes',
         'payment_method',
         'ticket_number',
-        'stripe_payment_id',
         'tip',
     ];
 
@@ -54,5 +53,10 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
     }
 }

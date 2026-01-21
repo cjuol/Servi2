@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Products\RelationManagers;
 
+use App\Filament\Resources\StockMovements\StockMovementResource;
+use App\Models\StockMovement;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -67,6 +69,9 @@ class MovementsRelationManager extends RelationManager
                     })
                     ->placeholder('Sin motivo'),
             ])
+            ->recordUrl(fn (StockMovement $record): string => 
+                StockMovementResource::getUrl('view', ['record' => $record])
+            )
             ->defaultSort('created_at', 'desc')
             ->heading('Histórico de Movimientos de Stock')
             ->description('Registro de todos los movimientos de inventario realizados en este producto');
